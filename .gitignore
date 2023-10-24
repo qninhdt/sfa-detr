@@ -1,0 +1,6 @@
+__pycache__
+data
+*.ipynb
+models/ops/build
+models/ops/dist
+models/ops/MultiScaleDeformableAttention.egg-info
