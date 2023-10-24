@@ -59,4 +59,8 @@ class DataPrefetcher:
             except StopIteration:
                 samples = None
                 targets = None
+
+        if samples is None or targets is None:
+            raise StopIteration
+
         return samples, targets
