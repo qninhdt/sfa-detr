@@ -37,6 +37,9 @@ class DataPrefetcher:
     def __iter__(self):
         return self
 
+    def __len__(self):
+        return len(self.loader)
+
     def __next__(self):
         if self.prefetch:
             torch.cuda.current_stream().wait_stream(self.stream)
