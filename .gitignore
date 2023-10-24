@@ -1,6 +1,7 @@
 __pycache__
 data
 *.ipynb
+checkpoints
 models/ops/build
 models/ops/dist
 models/ops/MultiScaleDeformableAttention.egg-info

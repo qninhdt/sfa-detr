@@ -40,7 +40,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     else:
         prefetcher = iter(data_loader)
 
-    for samples, targets in metric_logger.log_every(prefetcher, print_freq):
+    for samples, targets in metric_logger.log_every(prefetcher, print_freq, "Epoch: [{}]".format(epoch)):
         outputs = model(samples)
         loss_dict = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
@@ -77,8 +77,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(class_error=loss_dict_reduced['class_error'])
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
         metric_logger.update(grad_norm=grad_total_norm)
-
-        print(f'Epoch: [{epoch}]', end='')
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
