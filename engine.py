@@ -24,7 +24,7 @@ from datasets.data_prefetcher import DataPrefetcher
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, max_norm: float = 0):
+                    device: torch.device, epoch: int, max_norm, print_freq):
     model.train()
     criterion.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -34,8 +34,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         window_size=1, fmt='{value:.2f}'))
     metric_logger.add_meter('grad_norm', utils.SmoothedValue(
         window_size=1, fmt='{value:.2f}'))
-    header = 'Epoch: [{}]'.format(epoch)
-    print_freq = 1
 
     if device.type != 'cpu':
         prefetcher = DataPrefetcher(data_loader, device, prefetch=True)
@@ -89,7 +87,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 
 @torch.no_grad()
-def evaluate(model, criterion, postprocessors, data_loader, device, output_dir):
+def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, print_freq):
     model.eval()
     criterion.eval()
 
@@ -98,7 +96,7 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir):
         window_size=1, fmt='{value:.2f}'))
     header = 'Test:'
 
-    for samples, targets in metric_logger.log_every(data_loader, 10, header):
+    for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
