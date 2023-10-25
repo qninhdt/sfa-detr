@@ -13,6 +13,7 @@ Train and eval functions used in main.py
 import math
 import os
 import sys
+import wandb
 from typing import Iterable
 
 import torch
@@ -64,6 +65,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         optimizer.zero_grad()
         losses.backward()
+
         if max_norm > 0:
             grad_total_norm = torch.nn.utils.clip_grad_norm_(
                 model.parameters(), max_norm)
@@ -81,6 +83,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
+
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
 

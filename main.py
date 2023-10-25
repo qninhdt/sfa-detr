@@ -25,6 +25,7 @@ from dataset import build_dataset, merge_images_to_batch
 from datasets import get_coco_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
+import wandb
 
 
 def get_args_parser():
@@ -132,6 +133,12 @@ def get_args_parser():
 
 
 def main(args):
+    wandb.init(
+        project="deformable-detr-lab",
+        resume='allow',
+        id="detr-only"
+    )
+
     # utils.init_distributed_mode(args)
     args.distributed = False
 
@@ -284,6 +291,7 @@ def main(args):
         train_stats = train_one_epoch(
             model, criterion, data_loader_train, optimizer, device, epoch, args.clip_max_norm, args.print_feq)
         lr_scheduler.step()
+
         if args.output_dir:
             checkpoint_paths = [output_dir / 'checkpoint.pth']
             # extra checkpoint before LR drop and every 5 epochs
@@ -298,6 +306,8 @@ def main(args):
                     'epoch': epoch,
                     'args': args,
                 }, checkpoint_path)
+
+        wandb.log({"train_loss": train_stats['loss']})
 
         # test_stats, coco_evaluator = evaluate(
         #     model, criterion, postprocessors, data_loader_val, device, args.output_dir
