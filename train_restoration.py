@@ -101,11 +101,11 @@ for param in vgg_model.parameters():
     param.requires_grad = False
 
 # --- Load the network weight --- #
-if os.path.exists('./{}/'.format(args.checkpoint_path)) == False:
-    os.mkdir('./{}/'.format(args.checkpoint_path))
+if os.path.exists('{}/'.format(args.checkpoint_path)) == False:
+    os.mkdir('{}/'.format(args.checkpoint_path))
 try:
     net.load_state_dict(torch.load(
-        './{}/best.pth'.format(args.checkpoint_path)))
+        '{}/best.pth'.format(args.checkpoint_path)))
     print('--- weight loaded ---')
 except:
     print('--- no weight loaded ---')
@@ -175,7 +175,7 @@ for epoch in range(epoch_start, num_epochs):
     train_psnr = sum(psnr_list) / len(psnr_list)
 
     # --- Save the network parameters --- #
-    torch.save(net.state_dict(), './{}/latest.pth'.format(args.checkpoint_path))
+    torch.save(net.state_dict(), '{}/latest.pth'.format(args.checkpoint_path))
 
     # --- Use the evaluation model in testing --- #
     net.eval()
@@ -191,6 +191,6 @@ for epoch in range(epoch_start, num_epochs):
     # --- update the network weight --- #
     if val_psnr1 >= old_val_psnr1:
         torch.save(net.state_dict(),
-                   './{}/best.pth'.format(args.checkpoint_path))
+                   '{}/best.pth'.format(args.checkpoint_path))
         print('Model saved')
         old_val_psnr1 = val_psnr1
