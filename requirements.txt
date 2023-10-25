@@ -2,3 +2,8 @@ pycocotools
 tqdm
 cython
 scipy
+timm
+opencv-python
+tqdm
+wandb
+scikit-image
