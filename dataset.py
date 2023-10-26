@@ -101,17 +101,18 @@ def make_transforms(image_set):
             return T.Compose([
                 T.RandomHorizontalFlip(),
                 T.RandomSelect(
-                    T.RandomResize(scales, max_size=1333),
+                    T.RandomResize(scales, max_size=1333, d=16),
                     T.Compose([
                         T.RandomResize([400, 500, 600]),
                         T.RandomSizeCrop(384, 600),
-                        T.RandomResize(scales, max_size=1333),
+                        T.RandomResize(scales, max_size=1333, d=16),
                     ])
                 ),
                 normalize,
             ])
         else:
             return T.Compose([
+                T.SquarePad(),
                 T.RandomResize([200], max_size=400),
                 normalize,
             ])

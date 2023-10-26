@@ -801,12 +801,19 @@ class convprojection_base(nn.Module):
             p2d = (0, 0, 0, -1)
             res16x = F.pad(res16x, p2d, "constant", 0)
 
+        print("Shape of x1[2] is ", x1[2].shape)
+        print("Shape of x1[1] is ", x1[1].shape)
+        print("Shape of x1[0] is ", x1[0].shape)
+
         res8x = self.dense_4(res16x) + x1[2]
         res8x = self.convd8x(res8x)
+        print("Shape of res8x is ", res8x.shape)
         res4x = self.dense_3(res8x) + x1[1]
         res4x = self.convd4x(res4x)
+        print("Shape of res4x is ", res4x.shape)
         res2x = self.dense_2(res4x) + x1[0]
         res2x = self.convd2x(res2x)
+        print("Shape of res2x is ", res2x.shape)
         x = res2x
         x = self.dense_1(x)
         x = self.convd1x(x)

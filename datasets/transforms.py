@@ -83,7 +83,7 @@ def hflip(image, target):
     return flipped_image, target
 
 
-def resize(image, target, size, max_size=None):
+def resize(image, target, size, d=1, max_size=None):
     # size can be min_size (scalar) or (w, h) tuple
 
     def get_size_with_aspect_ratio(image_size, size, max_size=None):
@@ -100,10 +100,12 @@ def resize(image, target, size, max_size=None):
 
         if w < h:
             ow = size
-            oh = int(size * h / w)
+            oh = int(round(int(size * h / w) / d)) * d
+            # print('Width from {} -> {}'.format(int(size * h / w), oh))
         else:
             oh = size
-            ow = int(size * w / h)
+            ow = int(round(int(size * w / h) / d)) * d
+            # print('Height from {} -> {}'.format(int(size * w / h), ow))
 
         return (oh, ow)
 
@@ -160,6 +162,35 @@ def pad(image, target, padding):
     return padded_image, target
 
 
+class SquarePad(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, image, target):
+        w, h = image.size
+        dim_diff = abs(h - w)
+
+        if h <= w:
+            pad = (0, 0, 0, dim_diff)
+        else:
+            pad = (0, dim_diff, 0, 0)
+
+        padded_image = F.pad(image, pad, 0)
+
+        if target is None:
+            return padded_image, None
+
+        target = target.copy()
+
+        m = max(h, w)
+        target['size'] = torch.tensor([m, m])
+
+        if "masks" in target:
+            target['masks'] = torch.nn.functional.pad(target['masks'], pad, 0)
+
+        return padded_image, target
+
+
 class RandomCrop(object):
     def __init__(self, size):
         self.size = size
@@ -204,14 +235,15 @@ class RandomHorizontalFlip(object):
 
 
 class RandomResize(object):
-    def __init__(self, sizes, max_size=None):
+    def __init__(self, sizes, d=1, max_size=None):
         assert isinstance(sizes, (list, tuple))
         self.sizes = sizes
         self.max_size = max_size
+        self.d = d
 
     def __call__(self, img, target=None):
         size = random.choice(self.sizes)
-        return resize(img, target, size, self.max_size)
+        return resize(img, target, size, self.d, self.max_size)
 
 
 class RandomPad(object):
