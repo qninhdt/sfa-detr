@@ -167,7 +167,7 @@ for epoch in range(epoch_start, num_epochs):
         # --- To calculate average PSNR --- #
         psnr_list.extend(to_psnr(pred_image, gt))
 
-        if not (batch_id % 100):
+        if not (batch_id % 10):
             print('Epoch: {0}, Iteration: {1}, Loss: {2}'.format(
                 epoch, batch_id, loss))
 
@@ -187,6 +187,12 @@ for epoch in range(epoch_start, num_epochs):
 
     print("Epoch: {} | Train PSNR: {} | Val PSNR: {} | Val SSIM: {}".format(
         epoch, train_psnr, val_psnr1, val_ssim1))
+
+    wandb.log({
+        "epoch": epoch,
+        "val_psnr": val_psnr1,
+        "val_ssim": val_ssim1
+    })
 
     # --- update the network weight --- #
     if val_psnr1 >= old_val_psnr1:
