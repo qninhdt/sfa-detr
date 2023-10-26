@@ -838,9 +838,9 @@ class Transweather_base(nn.Module):
 
         x = self.convproj(x1)
 
-        # clean = self.active(self.clean(x))
+        clean = self.active(self.clean(x))
 
-        return x
+        return clean
 
     def load(self, path):
         """
