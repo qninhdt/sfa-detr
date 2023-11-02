@@ -15,7 +15,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 import math
-
 from util import box_ops
 from util.misc import (NestedTensor, nested_tensor_from_tensor_list,
                        accuracy, get_world_size, interpolate,
@@ -26,6 +25,8 @@ from .matcher import build_matcher
 from .segmentation import (DETRsegm, PostProcessPanoptic, PostProcessSegm,
                            dice_loss, sigmoid_focal_loss)
 from .deformable_transformer import build_deforamble_transformer
+from .inspector import build_inspector
+from restorator.transweather_model import build_restorator
 import copy
 
 
@@ -36,7 +37,7 @@ def _get_clones(module, N):
 class DeformableDETR(nn.Module):
     """ This is the Deformable DETR module that performs object detection """
 
-    def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels,
+    def __init__(self, backbone, transformer, restorator, num_classes, num_queries, num_feature_levels,
                  aux_loss=True, with_box_refine=False, two_stage=False):
         """ Initializes the model.
         Parameters:
@@ -52,6 +53,16 @@ class DeformableDETR(nn.Module):
         super().__init__()
         self.num_queries = num_queries
         self.transformer = transformer
+        self.restorator = restorator
+
+        if self.restorator is not None:
+            self.down64 = nn.ConvTranspose2d(
+                512, 64, kernel_size=4, stride=2, padding=1)
+            self.down128 = nn.ConvTranspose2d(
+                1024, 128, kernel_size=4, stride=2, padding=1)
+            self.inspector0 = build_inspector(64)
+            self.inspector1 = build_inspector(128)
+
         hidden_dim = transformer.d_model
         self.class_embed = nn.Linear(hidden_dim, num_classes)
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
@@ -138,6 +149,28 @@ class DeformableDETR(nn.Module):
             samples = nested_tensor_from_tensor_list(samples)
         features, pos = self.backbone(samples)
 
+        clean_features = None
+        hinge_loss = 0
+        if self.restorator is not None:
+            clean_features = self.restorator(
+                samples.tensors, feature_only=True)
+
+            feature0 = self.down64(features[0].tensors)
+            feature1 = self.down128(features[1].tensors)
+
+            clean_feature0 = clean_features[0]
+            clean_feature1 = clean_features[1]
+
+            f0 = self.inspector0(feature0)
+            f1 = self.inspector1(feature1)
+
+            c0 = self.inspector0(clean_feature0)
+            c1 = self.inspector1(clean_feature1)
+
+            zero = torch.tensor(0.0).to(f0.device)
+            hinge_loss = torch.min(
+                zero, -1 + f0) - min(zero, -1 - c0) + torch.min(zero, -1 + f1) - min(zero, -1 - c1)
+
         srcs = []
         masks = []
         for l, feat in enumerate(features):
@@ -197,7 +230,10 @@ class DeformableDETR(nn.Module):
             enc_outputs_coord = enc_outputs_coord_unact.sigmoid()
             out['enc_outputs'] = {
                 'pred_logits': enc_outputs_class, 'pred_boxes': enc_outputs_coord}
-        return out
+
+        features = [feature.tensors for feature in features]
+
+        return out, hinge_loss
 
     @torch.jit.unused
     def _set_aux_loss(self, outputs_class, outputs_coord):
@@ -283,6 +319,7 @@ class SetCriterion(nn.Module):
         """
         assert 'pred_boxes' in outputs
         idx = self._get_src_permutation_idx(indices)
+
         src_boxes = outputs['pred_boxes'][idx]
         target_boxes = torch.cat([t['boxes'][i]
                                  for t, (_, i) in zip(targets, indices)], dim=0)
@@ -352,7 +389,7 @@ class SetCriterion(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self, outputs, targets):
+    def forward(self, outputs, targets, sfa_loss):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
@@ -416,6 +453,8 @@ class SetCriterion(nn.Module):
                 l_dict = {k + f'_enc': v for k, v in l_dict.items()}
                 losses.update(l_dict)
 
+        losses['sfa_loss'] = sfa_loss
+
         return losses
 
 
@@ -437,6 +476,7 @@ class PostProcess(nn.Module):
         assert target_sizes.shape[1] == 2
 
         prob = out_logits.sigmoid()
+
         topk_values, topk_indexes = torch.topk(
             prob.view(out_logits.shape[0], -1), 100, dim=1)
         scores = topk_values
@@ -478,11 +518,14 @@ def build(args):
     device = torch.device(os.environ['DEVICE'])
 
     backbone = build_backbone(args)
-
     transformer = build_deforamble_transformer(args)
+
+    restorator = build_restorator() if args.model_type == 'sfa-detr' else None
+
     model = DeformableDETR(
         backbone,
         transformer,
+        restorator,
         num_classes=num_classes,
         num_queries=args.num_queries,
         num_feature_levels=args.num_feature_levels,

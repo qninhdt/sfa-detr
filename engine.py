@@ -22,6 +22,8 @@ from datasets.coco_eval import CocoEvaluator
 from datasets.panoptic_eval import PanopticEvaluator
 from datasets.data_prefetcher import DataPrefetcher
 
+from torchmetrics.detection import MeanAveragePrecision
+
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -42,8 +44,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         prefetcher = iter(data_loader)
 
     for samples, targets in metric_logger.log_every(prefetcher, print_freq, "Epoch: [{}]".format(epoch)):
-        outputs = model(samples)
-        loss_dict = criterion(outputs, targets)
+        outputs, sfa_loss = model(samples)
+        loss_dict = criterion(outputs, targets, sfa_loss)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k]
                      for k in loss_dict.keys() if k in weight_dict)
@@ -97,12 +99,14 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
         window_size=1, fmt='{value:.2f}'))
     header = 'Test:'
 
+    metric = MeanAveragePrecision(iou_type='bbox')
+
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        outputs = model(samples)
-        loss_dict = criterion(outputs, targets)
+        outputs, sfa_loss = model(samples)
+        loss_dict = criterion(outputs, targets, sfa_loss)
         weight_dict = criterion.weight_dict
 
         # reduce losses over all GPUs for logging purposes
@@ -120,9 +124,11 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
             [t["original_size"] for t in targets], dim=0)
         results = postprocessors['bbox'](outputs, orig_target_sizes)
 
-        res = {target['image_id'].item(): output for target,
-               output in zip(targets, results)}
+        metric.update(results, targets)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
-    print("Averaged stats:", metric_logger)
+
+    stats = metric.compute()
+
+    return stats, None

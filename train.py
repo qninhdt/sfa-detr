@@ -128,16 +128,20 @@ def get_args_parser():
     parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--cache_mode', default=False,
                         action='store_true', help='whether to cache images on memory')
+    parser.add_argument('--model_type', default='sfa-detr',
+                        help='whether to use sfa-detr or detr-only')
+    parser.add_argument('--wandb', default='')
 
     return parser
 
 
 def main(args):
-    wandb.init(
-        project="deformable-detr-lab",
-        resume='allow',
-        id="detr-only"
-    )
+    if len(args.wandb) > 0:
+        wandb.init(
+            project="deformable-detr-lab",
+            resume='allow',
+            id=args.wandb
+        )
 
     # utils.init_distributed_mode(args)
     args.distributed = False
@@ -275,13 +279,17 @@ def main(args):
         #         model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir
         #     )
 
-    # if args.eval:
-    #     test_stats, coco_evaluator = evaluate(model, criterion, postprocessors,
-    #                                           data_loader_val, base_ds, device, args.output_dir)
-    #     if args.output_dir:
-    #         utils.save_on_master(
-    #             coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
-    #     return
+    if args.eval:
+        test_stats, _ = evaluate(
+            model, criterion, postprocessors, data_loader_val, device, args.output_dir, args.print_feq
+        )
+
+        print(test_stats)
+
+        # if args.output_dir:
+        #     utils.save_on_master(
+        #         coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
+        return
 
     print("Start training")
     start_time = time.time()
@@ -307,11 +315,14 @@ def main(args):
                     'args': args,
                 }, checkpoint_path)
 
-        wandb.log({"train_loss": train_stats['loss']})
+        if len(args.wandb) > 0:
+            wandb.log({"train_loss": train_stats['loss']})
 
-        # test_stats, coco_evaluator = evaluate(
-        #     model, criterion, postprocessors, data_loader_val, device, args.output_dir
-        # )
+        test_stats, coco_evaluator = evaluate(
+            model, criterion, postprocessors, data_loader_val, device, args.output_dir, args.print_feq
+        )
+
+        print(test_stats)
 
         # log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
         #              **{f'test_{k}': v for k, v in test_stats.items()},

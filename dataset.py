@@ -94,18 +94,18 @@ def make_transforms(image_set):
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+    scales = [736, 768, 800]
 
     if image_set == 'train':
         if os.environ['DEVICE'] != 'cpu':
             return T.Compose([
                 T.RandomHorizontalFlip(),
                 T.RandomSelect(
-                    T.RandomResize(scales, max_size=1333, d=16),
+                    T.RandomResize(scales, max_size=1333, d=32),
                     T.Compose([
                         T.RandomResize([400, 500, 600]),
                         T.RandomSizeCrop(384, 600),
-                        T.RandomResize(scales, max_size=1333, d=16),
+                        T.RandomResize(scales, max_size=1333, d=32),
                     ])
                 ),
                 normalize,
@@ -113,7 +113,7 @@ def make_transforms(image_set):
         else:
             return T.Compose([
                 T.SquarePad(),
-                T.RandomResize([200], max_size=400),
+                T.RandomResize([256], max_size=256, d=16),
                 normalize,
             ])
 

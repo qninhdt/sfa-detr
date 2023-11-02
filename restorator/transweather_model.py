@@ -775,7 +775,7 @@ class convprojection_base(nn.Module):
 
         self.active = nn.Tanh()
 
-    def forward(self, x1):
+    def forward(self, x1, feature_only):
 
         # if x1[3].shape[3] != res32x.shape[3] and x1[3].shape[2] != res32x.shape[2]:
         #     p2d = (0,-1,0,-1)
@@ -807,6 +807,9 @@ class convprojection_base(nn.Module):
         res4x = self.dense_3(res8x) + x1[1]
         res4x = self.convd4x(res4x)
 
+        if feature_only:
+            return [res4x, res8x, res16x]
+
         res2x = self.dense_2(res4x) + x1[0]
         res2x = self.convd2x(res2x)
 
@@ -814,10 +817,10 @@ class convprojection_base(nn.Module):
         x = self.dense_1(x)
         x = self.convd1x(x)
 
-        return x  # [res16x, res8x, res4x]
-
+        return x
 
 # The following is the network which can be fine-tuned for specific datasets
+
 
 class Transweather_base(nn.Module):
 
@@ -835,9 +838,12 @@ class Transweather_base(nn.Module):
         if path is not None:
             self.load(path)
 
-    def forward(self, x):
+    def forward(self, x, feature_only=False):
 
         x1 = self.Tenc(x)
+
+        if feature_only:
+            return self.convproj(x1, feature_only)
 
         x = self.convproj(x1)
 
@@ -904,3 +910,8 @@ class Transweather(nn.Module):
         self.load_state_dict(checkpoint_state_dict_noprefix, strict=False)
         del checkpoint
         torch.cuda.empty_cache()
+
+
+def build_restorator():
+    restorator = Transweather_base()
+    return restorator

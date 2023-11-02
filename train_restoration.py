@@ -5,23 +5,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
-from restoration.train_data_functions import TrainData
-from restoration.val_data_functions import ValData
-from restoration.utils import to_psnr, print_log, validation, adjust_learning_rate
+from restorator.train_data_functions import TrainData
+from restorator.val_data_functions import ValData
+from restorator.utils import to_psnr, print_log, validation, adjust_learning_rate
 from torchvision.models import vgg16
-from restoration.perceptual import LossNetwork
+from restorator.perceptual import LossNetwork
 import os
 import numpy as np
 import random
 
-from restoration.transweather_model import Transweather_base
+from restorator.transweather_model import Transweather_base
 
 import wandb
 
 wandb.init(
     project="deformable-detr-lab",
     resume='allow',
-    id="restoration"
+    id="restorator"
 )
 
 plt.switch_backend('agg')

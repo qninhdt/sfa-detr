@@ -110,10 +110,7 @@ def resize(image, target, size, d=1, max_size=None):
         return (oh, ow)
 
     def get_size(image_size, size, max_size=None):
-        if isinstance(size, (list, tuple)):
-            return size[::-1]
-        else:
-            return get_size_with_aspect_ratio(image_size, size, max_size)
+        return get_size_with_aspect_ratio(image_size, size, max_size)
 
     size = get_size(image.size, size, max_size)
     rescaled_image = F.resize(image, size)
