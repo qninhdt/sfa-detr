@@ -123,6 +123,30 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
         orig_target_sizes = torch.stack(
             [t["original_size"] for t in targets], dim=0)
         results = postprocessors['bbox'](outputs, orig_target_sizes)
+        for result in results:
+
+            keep = result['scores'] > 0
+            result['scores'] = result['scores'][keep]
+            result['labels'] = result['labels'][keep]
+            result['boxes'] = result['boxes'][keep]
+
+        for target in targets:
+            cx, cy, w, h = target['boxes'][:, 0], target['boxes'][:,
+                                                                  1], target['boxes'][:, 2], target['boxes'][:, 3]
+            oh, ow = target['original_size'][0], target['original_size'][1]
+
+            t0 = cx * ow - w * ow / 2.0
+            t1 = cy * oh - h * oh / 2.0
+            t2 = cx * ow + w * ow / 2.0
+            t3 = cy * oh + h * oh / 2.0
+
+            target['boxes'][:, 0] = t0
+            target['boxes'][:, 1] = t1
+            target['boxes'][:, 2] = t2
+            target['boxes'][:, 3] = t3
+
+        # print(targets[0]['boxes'])
+        # print(results[0]['boxes'])
 
         metric.update(results, targets)
 
