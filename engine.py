@@ -125,7 +125,7 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
         results = postprocessors['bbox'](outputs, orig_target_sizes)
         for result in results:
 
-            keep = result['scores'] > 0
+            keep = result['scores'] > 0.3
             result['scores'] = result['scores'][keep]
             result['labels'] = result['labels'][keep]
             result['boxes'] = result['boxes'][keep]
@@ -155,4 +155,4 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
 
     stats = metric.compute()
 
-    return stats, None
+    return {k: meter.global_avg for k, meter in metric_logger.meters.items()}, stats

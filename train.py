@@ -315,14 +315,24 @@ def main(args):
                     'args': args,
                 }, checkpoint_path)
 
-        if len(args.wandb) > 0:
-            wandb.log({"train_loss": train_stats['loss']})
-
-        test_stats, coco_evaluator = evaluate(
+        test_stats, metrics = evaluate(
             model, criterion, postprocessors, data_loader_val, device, args.output_dir, args.print_feq
         )
 
-        print(test_stats)
+        metrics = {k: float(v) for k, v in metrics.items() if int(v) != -1}
+        metrics_str = ', '.join([f'{k}: {v:.4f}' for k, v in metrics.items()])
+
+        print(metrics_str)
+
+        if len(args.wandb) > 0:
+            wandb.log({
+                'epoch': epoch,
+                'train_loss': train_stats['loss'],
+                'test_loss': test_stats['loss'],
+                'train_sfa_loss': train_stats['sfa_loss_unscaled'],
+                'test_sfa_loss': test_stats['sfa_loss_unscaled'],
+                **metrics
+            })
 
         # log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
         #              **{f'test_{k}': v for k, v in test_stats.items()},
