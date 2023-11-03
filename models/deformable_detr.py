@@ -168,8 +168,8 @@ class DeformableDETR(nn.Module):
             c1 = self.inspector1(clean_feature1)
 
             zero = torch.tensor(0.0).to(f0.device)
-            hinge_loss = torch.min(
-                zero, -1 + f0) - min(zero, -1 - c0) + torch.min(zero, -1 + f1) - min(zero, -1 - c1)
+            hinge_loss = - torch.min(
+                zero, -1 + f0) - torch.min(zero, -1 - c0) - torch.min(zero, -1 + f1) - torch.min(zero, -1 - c1)
 
         srcs = []
         masks = []
@@ -453,7 +453,7 @@ class SetCriterion(nn.Module):
                 l_dict = {k + f'_enc': v for k, v in l_dict.items()}
                 losses.update(l_dict)
 
-        losses['sfa_loss'] = sfa_loss
+        losses['loss_sfa'] = sfa_loss
 
         return losses
 
@@ -537,7 +537,7 @@ def build(args):
         model = DETRsegm(model, freeze_detr=(args.frozen_weights is not None))
     matcher = build_matcher(args)
     weight_dict = {'loss_ce': args.cls_loss_coef,
-                   'loss_sfa': 10,
+                   'loss_sfa': 5,
                    'loss_bbox': args.bbox_loss_coef}
     weight_dict['loss_giou'] = args.giou_loss_coef
     if args.masks:

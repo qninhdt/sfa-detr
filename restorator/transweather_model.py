@@ -842,10 +842,10 @@ class Transweather_base(nn.Module):
 
         x1 = self.Tenc(x)
 
-        if feature_only:
-            return self.convproj(x1, feature_only)
+        x = self.convproj(x1, feature_only)
 
-        x = self.convproj(x1)
+        if feature_only:
+            return x
 
         clean = self.active(self.clean(x))
 
