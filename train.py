@@ -280,7 +280,7 @@ def main(args):
         #     )
 
     if args.eval:
-        test_stats, _ = evaluate(
+        test_stats, metrics = evaluate(
             model, criterion, postprocessors, data_loader_val, device, args.output_dir, args.print_feq
         )
 
@@ -288,7 +288,6 @@ def main(args):
         print(metrics)
 
         wandb.log({
-            'epoch': epoch,
             'test_loss': test_stats['loss'],
             **metrics
         })
@@ -333,8 +332,6 @@ def main(args):
                 'epoch': epoch,
                 'train_loss': train_stats['loss'],
                 'test_loss': test_stats['loss'],
-                'train_sfa_loss': train_stats['sfa_loss_unscaled'],
-                'test_sfa_loss': test_stats['sfa_loss_unscaled'],
                 **metrics
             })
 
