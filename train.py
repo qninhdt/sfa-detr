@@ -335,14 +335,17 @@ def main(args):
                 **metrics
             })
 
-        # log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
-        #              **{f'test_{k}': v for k, v in test_stats.items()},
-        #              'epoch': epoch,
-        #              'n_parameters': n_parameters}
-
-        # if args.output_dir and utils.is_main_process():
-        #     with (output_dir / "log.txt").open("a") as f:
-        #         f.write(json.dumps(log_stats) + "\n")
+        log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
+                     **{f'test_{k}': v for k, v in test_stats.items()},
+                     'map': metrics['map'].item(), 
+                     'map_50': metrics['map_50'].item(), 
+                     'map_75' : metrics['map_75'].item(),
+                     'epoch': epoch,
+                     'n_parameters': n_parameters}
+        
+        if args.output_dir and utils.is_main_process():
+            with (output_dir / "log.txt").open("a") as f:
+                f.write(json.dumps(log_stats) + "\n")
 
         #     # for evaluation logs
         #     if coco_evaluator is not None:
