@@ -285,6 +285,13 @@ def main(args):
         )
 
         print(test_stats)
+        print(metrics)
+
+        wandb.log({
+            'epoch': epoch,
+            'test_loss': test_stats['loss'],
+            **metrics
+        })
 
         # if args.output_dir:
         #     utils.save_on_master(
@@ -319,10 +326,7 @@ def main(args):
             model, criterion, postprocessors, data_loader_val, device, args.output_dir, args.print_feq
         )
 
-        metrics = {k: float(v) for k, v in metrics.items() if int(v) != -1}
-        metrics_str = ', '.join([f'{k}: {v:.4f}' for k, v in metrics.items()])
-
-        print(metrics_str)
+        print(metrics)
 
         if len(args.wandb) > 0:
             wandb.log({

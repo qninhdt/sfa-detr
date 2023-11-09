@@ -54,6 +54,7 @@ class DeformableDETR(nn.Module):
         self.num_queries = num_queries
         self.transformer = transformer
         self.restorator = restorator
+        self.bce = nn.BCELoss()
 
         if self.restorator is not None:
             self.down64 = nn.ConvTranspose2d(
@@ -167,9 +168,14 @@ class DeformableDETR(nn.Module):
             c0 = self.inspector0(clean_feature0)
             c1 = self.inspector1(clean_feature1)
 
-            zero = torch.tensor(0.0).to(f0.device)
-            hinge_loss = - torch.min(
-                zero, -1 + f0) - torch.min(zero, -1 - c0) - torch.min(zero, -1 + f1) - torch.min(zero, -1 - c1)
+            ones = torch.ones(f0.size(0), 1).to(f0.device)
+            zeros = torch.zeros(f0.size(0), 1).to(f0.device)
+
+            # hinge_loss = - torch.min(
+            #     zero, -1 + f0) - torch.min(zero, -1 - c0) - torch.min(zero, -1 + f1) - torch.min(zero, -1 - c1)
+            # hinge_loss = self.bce(f0, c0) + self.bce(f1, c1)
+            hinge_loss = self.bce(f0, zeros) + self.bce(c0, ones) \
+                + self.bce(f1, zeros) + self.bce(c1, ones)
 
         srcs = []
         masks = []
