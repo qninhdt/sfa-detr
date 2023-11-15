@@ -162,23 +162,23 @@ class DeformableDETR(nn.Module):
             clean_feature0 = clean_features[0]
             clean_feature1 = clean_features[1]
 
-            # f0 = self.inspector0(feature0)
-            # f1 = self.inspector1(feature1)
+            f0 = self.inspector0(feature0)
+            f1 = self.inspector1(feature1)
 
-            # c0 = self.inspector0(clean_feature0)
-            # c1 = self.inspector1(clean_feature1)
+            c0 = self.inspector0(clean_feature0)
+            c1 = self.inspector1(clean_feature1)
 
-            # ones = torch.ones(f0.size(0), 1).to(f0.device)
-            # zeros = torch.zeros(f0.size(0), 1).to(f0.device)
+            ones = torch.ones(f0.size(0), 1).to(f0.device)
+            zeros = torch.zeros(f0.size(0), 1).to(f0.device)
 
             # hinge_loss = - torch.min(
             #     zero, -1 + f0) - torch.min(zero, -1 - c0) - torch.min(zero, -1 + f1) - torch.min(zero, -1 - c1)
             # hinge_loss = self.bce(f0, c0) + self.bce(f1, c1)
-            # hinge_loss = self.bce(f0, zeros) + self.bce(c0, ones) \
-            #     + self.bce(f1, zeros) + self.bce(c1, ones)
+            hinge_loss = self.bce(f0, zeros) + self.bce(c0, ones) \
+                + self.bce(f1, zeros) + self.bce(c1, ones)
 
-            hinge_loss = torch.pow(feature0 - clean_feature0, 2).mean() + \
-                torch.pow(feature1 - clean_feature1, 2).mean()
+            # hinge_loss = torch.pow(feature0 - clean_feature0, 2).mean() + \
+            #     torch.pow(feature1 - clean_feature1, 2).mean()
 
         srcs = []
         masks = []
@@ -531,16 +531,16 @@ def build(args):
 
     restorator = build_restorator() if args.model_type == 'sfa-detr' else None
 
-    if restorator is not None:
-        checkpoint = torch.load(
-            args.output_dir + '/restoration/checkpoint.pth')
-        checkpoint = {k[7:]: v for k, v in checkpoint.items()}
+    # if restorator is not None:
+    #     checkpoint = torch.load(
+    #         args.output_dir + '/restoration/checkpoint.pth')
+    #     checkpoint = {k[7:]: v for k, v in checkpoint.items()}
 
-        restorator.load_state_dict(checkpoint)
+    #     restorator.load_state_dict(checkpoint)
 
-        # freeze restorator
-        for param in restorator.parameters():
-            param.requires_grad = False
+    #     # freeze restorator
+    #     for param in restorator.parameters():
+    #         param.requires_grad = False
 
     model = DeformableDETR(
         backbone,
