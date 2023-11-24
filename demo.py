@@ -210,7 +210,7 @@ def main(args):
 
         img = img.cuda()
         # propagate through the model
-        outputs = model(img)
+        outputs, _, _ = model(img)
 
         out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
 
