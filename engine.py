@@ -99,7 +99,7 @@ def evaluate(model, criterion, postprocessors, data_loader, device, output_dir, 
         window_size=1, fmt='{value:.2f}'))
     header = 'Test:'
 
-    metric = MeanAveragePrecision(iou_type='bbox')
+    metric = MeanAveragePrecision(iou_type='bbox', class_metrics=True)
 
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         samples = samples.to(device)

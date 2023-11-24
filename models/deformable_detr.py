@@ -531,16 +531,16 @@ def build(args):
 
     restorator = build_restorator() if args.model_type == 'sfa-detr' else None
 
-    # if restorator is not None:
-    #     checkpoint = torch.load(
-    #         args.output_dir + '/restoration/checkpoint.pth')
-    #     checkpoint = {k[7:]: v for k, v in checkpoint.items()}
+    if restorator is not None:
+        checkpoint = torch.load(
+            args.output_dir + '/restoration/checkpoint.pth')
+        checkpoint = {k[7:]: v for k, v in checkpoint.items()}
 
-    #     restorator.load_state_dict(checkpoint)
+        restorator.load_state_dict(checkpoint)
 
-    #     # freeze restorator
-    #     for param in restorator.parameters():
-    #         param.requires_grad = False
+        # freeze restorator
+        for param in restorator.parameters():
+            param.requires_grad = False
 
     model = DeformableDETR(
         backbone,

@@ -124,6 +124,8 @@ def get_args_parser():
     parser.add_argument('--num', default=10, type=int)
     parser.add_argument('--cache_mode', default=False,
                         action='store_true', help='whether to cache images on memory')
+    parser.add_argument('--model_type', default='sfa-detr',
+                        help='whether to use sfa-detr or detr-only')
 
     return parser
 
